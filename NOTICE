@@ -1,0 +1,15 @@
+GreenVapor Linux Manager (gvlinux) — Third-Party Notices
+
+Original components of GreenVapor Linux Manager (Go orchestrator, CLI, WebUI,
+diagnostic engine, Proton launch helper, achievement schema generator, conflict
+detector/archiver, Decky Loader plugin, CI signature monitors, and original
+GreenVapor patches) are Copyright (c) 2026 GreenVapor (vaporgreen / leorobles)
+and governed by the LICENSE file (All Rights Reserved — Personal Use Only).
+
+This project interoperates with and credits the following third-party projects,
+each of which remains governed by its own respective license and copyright:
+
+- SLSsteam / slsteam-moon — AceSLS / Rafie-kun / Swwapys
+- Lumen & LuaTools — LuaTools community / Rafie-kun / Swwapys
+- CloudRedirect — madoiscool / swwayps
+- Steamless — atom0s

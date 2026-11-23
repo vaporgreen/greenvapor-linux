@@ -1,0 +1,56 @@
+GreenVapor Source-Available License (All Rights Reserved — Personal Use Only)
+
+Copyright (c) 2026 GreenVapor (vaporgreen / leorobles). All rights reserved.
+
+1. Scope
+This license governs all original source code, scripts, configuration templates,
+patches, binary build artifacts, WebUI assets, Decky Loader plugin code, CI
+workflows, documentation, and branding contained in this repository
+("the Software"), including but not limited to:
+  - cmd/gvlinux/ and internal/* (Go orchestrator, CLI, WebUI, doctor, proton,
+    cheevo, conflicts, updater, snapshots, brand, steamstub)
+  - install.sh, build scripts, and scripts/*
+  - patches/* (original GreenVapor patch sets)
+  - GreenVapor Decky Loader plugin (GreenVapor.zip)
+
+Third-party upstream components referenced or interoperated with by the Software
+remain the property of their respective authors and are subject to their own
+licenses, as detailed in the NOTICE file.
+
+2. Permitted Personal Use
+Subject to full compliance with this license, individual end users are granted a
+personal, non-exclusive, non-transferable, revocable license to:
+  a) Download, view, and audit the source code for transparency and security;
+  b) Compile and run the Software on their own personal devices for personal,
+     non-commercial use.
+
+3. Prohibited Uses (Prior Written Authorization Required)
+Without explicit PRIOR WRITTEN AUTHORIZATION from the copyright holder
+(vaporgreen / leorobles), you may NOT:
+  a) Copy, reproduce, fork for redistribution, modify, port, translate, or
+     incorporate any part of the Software (source code, patches, binary
+     signatures, algorithms, UI, or compiled binaries) into any other software,
+     project, repository, wrapper, launcher, or bundle — whether free,
+     open-source, or commercial;
+  b) Use automated tools, large language models (LLMs), coding agents, or
+     AI-assisted rewriting/refactoring to extract, translate, imitate, or
+     re-implement code, patches, or technical designs derived from this
+     repository into another project;
+  c) Redistribute, repackage, mirror, or host the Software or its release
+     binaries outside official vaporgreen/greenvapor-linux releases;
+  d) Remove or obscure copyright notices, branding, or attribution.
+
+Credit or attribution alone does NOT grant permission to copy, port, or derive
+from the Software. Prior written authorization from the author is mandatory.
+
+4. Requesting Authorization
+To request written permission for reuse, collaboration, or licensing inquiries,
+contact the copyright holder (vaporgreen / leorobles) before copying or adapting
+any code or patches.
+
+5. Disclaimer of Warranty
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHOR OR COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY
+ARISING FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR ITS USE.
