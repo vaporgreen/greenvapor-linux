@@ -12,7 +12,7 @@
 
 [![Latest Release](https://img.shields.io/github/v/release/vaporgreen/greenvapor-linux?style=flat-square&color=4caf50&label=release)](https://github.com/vaporgreen/greenvapor-linux/releases/latest)
 [![Total Downloads](https://img.shields.io/github/downloads/vaporgreen/greenvapor-linux/total?style=flat-square&color=2e7d32&label=downloads)](https://github.com/vaporgreen/greenvapor-linux/releases)
-![Signature Monitor](https://img.shields.io/badge/Steam%20x64%20%2B%20i386%20Signatures-272%2F272%20Verified-4caf50?style=flat-square)
+[![Signature Monitor](https://img.shields.io/github/actions/workflow/status/vaporgreen/greenvapor-linux/steam-signature-monitor.yml?style=flat-square&label=Steam%20x64%20%2B%20i386%20Signatures)](https://github.com/vaporgreen/greenvapor-linux/actions/workflows/steam-signature-monitor.yml)
 [![GitHub Stars](https://img.shields.io/github/stars/vaporgreen/greenvapor-linux?style=flat-square&color=81c784)](https://github.com/vaporgreen/greenvapor-linux/stargazers)
 [![License](https://img.shields.io/badge/license-Source--Available%20%28All%20Rights%20Reserved%29-c62828?style=flat-square)](LICENSE)
 ![Platform](https://img.shields.io/badge/platform-SteamOS%20%7C%20Linux%20x86__64%20%2B%20i386-1a2416?style=flat-square)
@@ -38,8 +38,16 @@ curl -fsSL https://raw.githubusercontent.com/vaporgreen/greenvapor-linux/main/in
 ### Offline / Local Install (using files from `dist/`)
 
 ```sh
-sh install.sh ./dist/gvlinux-linux-amd64 ./dist/greenvapor-linux-bundle-x64.tar.gz
+sh install.sh ./dist/gvlinux-linux-amd64 ./dist/greenvapor-linux-bundle-x64.tar.gz ./dist/greenvapor-base-stack.tar.gz
 ```
+
+### Clean Uninstall (1 command — preserves games, saves & Lua scripts)
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/vaporgreen/greenvapor-linux/main/uninstall.sh | sh
+```
+
+*(Also available via `gvlinux purge` or the **Uninstall / Purge** button inside `gvlinux gui`. Pass `--full` to also remove local snapshots in `~/.local/share/GreenVapor`.)*
 
 ### Optional: Decky Loader Plugin (Gaming Mode QAM `...`)
 
@@ -49,7 +57,7 @@ Download **`GreenVapor.zip`** from the [latest release](https://github.com/vapor
 
 ## Live Steam Signature Coverage (x64 Primary + i386 Supplementary)
 
-Every 6 hours, our automated CI monitor downloads Valve's official live 64-bit (`steam_client_steamrt64` / `steam_client_publicbeta_steamrt64`) and 32-bit (`steam_client_ubuntu12` / `steam_client_publicbeta_ubuntu12`) manifests and validates every hook signature:
+Every 6 hours, [our CI monitor](.github/workflows/steam-signature-monitor.yml) downloads Valve's official live 64-bit (`steam_client_steamrt64` / `steam_client_publicbeta_steamrt64`) and 32-bit (`steam_client_ubuntu12` / `steam_client_publicbeta_ubuntu12`) manifests and validates every hook signature:
 
 | Component | Steam Stable | Steam Public Beta | Upstream Status |
 | --- | :---: | :---: | :---: |
@@ -84,7 +92,7 @@ Every 6 hours, our automated CI monitor downloads Valve's official live 64-bit (
 - **64-bit Payload Bundle (`greenvapor-linux-bundle-x64.tar.gz`)**:
   - **`cloud_redirect.so` + `cloud_redirect_cli` (x86_64)** — full 64-bit port for `steamclient64.so` with all 8 modules, configurable `onedrive_root_folder`, retry logic for OneDrive `curl 35/56` / `5xx` transient errors, and a 5-second burst cache window under `foreignSession`.
   - **`SLSsteam.so` (x86_64)** — built with dual Steam Stable + Public Beta signatures (`61/61`) and Decky Loader + Lumen CEF port `8080` coexistence across `pressure-vessel` and secondary `LD_AUDIT` namespaces.
-  - **`library-inject.so` (x86_64)** — fixed ELF64 loader  validating `ELFCLASS64` headers so `/usr/lib32` never breaks `kde-open` / browser OAuth login.
+  - **`library-inject.so` (x86_64)** — fixed ELF64 loader ([patches/library-inject-x64.cpp](patches/library-inject-x64.cpp)) validating `ELFCLASS64` headers so `/usr/lib32` never breaks `kde-open` / browser OAuth login.
 
 ---
 
@@ -121,15 +129,19 @@ gvlinux vanilla                             # Launch vanilla Steam without hooks
 gvlinux purge --yes                         # Restore vanilla Steam (preserves games & stplug-in)
 ```
 
-## Verification & Checksums
+## Building from Source
 
-Every release includes a signed manifest `SHA256SUMS.txt`. `gvlinux update` verifies SHA-256 checksums before replacing any binary and creates an automatic rollback snapshot.
+```sh
+./build-linux.sh
+```
+
+Runs all Go unit tests (`go test -v ./...`) and outputs a static `CGO_ENABLED=0` ELF64 binary at `dist/gvlinux-linux-amd64`.
 
 ---
 
 ## License
 
-**All Rights Reserved — Personal Use Only (Binary Distribution).** See [LICENSE](LICENSE) and [NOTICE](NOTICE).
+**Source-Available — All Rights Reserved (Personal Use Only).** See [LICENSE](LICENSE) and [NOTICE](NOTICE).
 
 - End users are free to download, inspect, compile, and use `gvlinux` for **personal, non-commercial use**.
 - **Prior written authorization** from `vaporgreen` (`leorobles`) is strictly required before copying, porting, modifying, redistributing, or using AI/automated tools to extract or re-implement any source code, patches, scripts, or binaries from this repository into another project. Attribution alone does not grant reuse rights.
