@@ -1,15 +1,39 @@
-GreenVapor Linux Manager (gvlinux) — Third-Party Notices
+GreenVapor Linux Manager (gvlinux) — Licensing & Third-Party Notices
 
-Original components of GreenVapor Linux Manager (Go orchestrator, CLI, WebUI,
-diagnostic engine, Proton launch helper, achievement schema generator, conflict
-detector/archiver, Decky Loader plugin, CI signature monitors, and original
-GreenVapor patches) are Copyright (c) 2026 GreenVapor (vaporgreen / leorobles)
-and governed by the LICENSE file (All Rights Reserved — Personal Use Only).
+1. Original GreenVapor Components (Root LICENSE)
+   The standalone GreenVapor Linux Manager orchestrator (Go CLI, WebUI, doctor
+   diagnostics, snapshot/rollback, Proton launch helper, achievement schema
+   generator, hybrid catalog, save backup/restore, conflict detector, Decky
+   Loader plugin, and installer/uninstaller scripts) are original independent
+   works Copyright (c) 2026 GreenVapor (vaporgreen / leorobles) and governed
+   by the root LICENSE file.
 
-This project interoperates with and credits the following third-party projects,
-each of which remains governed by its own respective license and copyright:
+2. SLSsteam / slsteam-moon Patches (GNU AGPL v3 — see LICENSE-AGPLv3)
+   The precompiled SLSsteam.so and library-inject.so binaries distributed in
+   release bundles are built from the GNU AGPL v3 project SLSsteam /
+   slsteam-moon (AceSLS / swwayps / Rafie-kun).
+   In full compliance with GNU AGPL v3, all GreenVapor source modifications
+   applied to SLSsteam / slsteam-moon are publicly available in the `patches/`
+   directory of this repository under GNU AGPL v3:
+   - patches/decky-cef-8080.patch
+   - patches/library-inject-x64.cpp
+   - patches/steam-beta-dual-patterns.patch
+   - patches/unowned-game-status.patch
+   Upstream source: https://github.com/Rafie-kun/slsteam-moon (pinned base v3.12)
+                    https://github.com/AceSLS/SLSsteam
 
-- SLSsteam / slsteam-moon — AceSLS / Rafie-kun / Swwapys
-- Lumen & LuaTools — LuaTools community / Rafie-kun / Swwapys
-- CloudRedirect — madoiscool / swwayps
-- Steamless — atom0s
+3. Lumen & LuaTools (GNU AGPL v3 — see LICENSE-AGPLv3)
+   The curated `greenvapor-base-stack.tar.gz` release asset redistributes
+   unmodified upstream releases of Lumen and LuaTools for installation
+   reliability and SHA-256 integrity:
+   - Lumen (v2.21): https://github.com/Rafie-kun/lumen
+   - LuaTools (v2.16): https://github.com/Rafie-kun/luatools-moon
+
+4. CloudRedirect (MIT License — see LICENSE-MIT-CloudRedirect)
+   Cloud save redirection builds upon CloudRedirect (MIT License — Selectively11 /
+   crghofficial / madoiscool / swwayps). See LICENSE-MIT-CloudRedirect for the
+   full MIT license text.
+
+5. Steamless (GNU GPL v3 / original license)
+   Steamless unpacker CLI & plugins by atom0s:
+   https://github.com/atom0s/Steamless
