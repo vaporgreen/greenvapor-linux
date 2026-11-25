@@ -1,0 +1,198 @@
+﻿diff --git a/src/patterns.cpp b/src/patterns.cpp
+index 76d0ca8..35cf9c7 100644
+--- a/src/patterns.cpp
++++ b/src/patterns.cpp
+@@ -586,34 +586,52 @@ bool Pattern_t::find()
+ 	}
+ 	else
+ 	{
+-		const auto resolved = MemHlp::searchSignatureDetailed
+-		(
+-			name.c_str(), pattern.c_str(), targetModule, followMode,
+-			prologue.empty() ? nullptr : prologue.data(), prologue.size()
+-		);
+-		matchAddress = resolved.match;
+-		address = resolved.target;
+-
+-		// The hooked address is usually NOT the matched one: Relative follows a
+-		// call/jmp operand and PrologueUpwards walks backwards, so the derived
+-		// address carries none of the scan's guarantees.  Prove it lands in this
+-		// module's executable memory before anyone detours it.  The cache and
+-		// catalog paths already do this on their own inputs; this closes the
+-		// embedded resolver, which is the path every unknown client build takes.
+-		if (address != LM_ADDRESS_BAD)
+-		{
+-			lm_segment_t targetSegment {};
+-			const bool inside = address >= targetModule.base
+-			                 && address < targetModule.base + targetModule.size;
+-			const bool executable = LM_FindSegment(address, &targetSegment)
+-			                     && (targetSegment.prot & LM_PROT_XR) == LM_PROT_XR;
+-			if (!inside || !executable)
++		const auto tryResolve = [&](const std::string& sig) -> bool
++		{
++			const auto resolved = MemHlp::searchSignatureDetailed
++			(
++				name.c_str(), sig.c_str(), targetModule, followMode,
++				prologue.empty() ? nullptr : prologue.data(), prologue.size()
++			);
++			matchAddress = resolved.match;
++			address = resolved.target;
++
++			// The hooked address is usually NOT the matched one: Relative follows a
++			// call/jmp operand and PrologueUpwards walks backwards, so the derived
++			// address carries none of the scan's guarantees.  Prove it lands in this
++			// module's executable memory before anyone detours it.  The cache and
++			// catalog paths already do this on their own inputs; this closes the
++			// embedded resolver, which is the path every unknown client build takes.
++			if (address != LM_ADDRESS_BAD)
+ 			{
+-				g_pLog->warn(
+-					"Resolved target for '%s' is not executable module memory; "
+-					"refusing to use it\n", name.c_str());
+-				address = LM_ADDRESS_BAD;
+-				matchAddress = LM_ADDRESS_BAD;
++				lm_segment_t targetSegment {};
++				const bool inside = address >= targetModule.base
++				                 && address < targetModule.base + targetModule.size;
++				const bool executable = LM_FindSegment(address, &targetSegment)
++				                     && (targetSegment.prot & LM_PROT_XR) == LM_PROT_XR;
++				if (!inside || !executable)
++				{
++					g_pLog->warn(
++						"Resolved target for '%s' is not executable module memory; "
++						"refusing to use it\n", name.c_str());
++					address = LM_ADDRESS_BAD;
++					matchAddress = LM_ADDRESS_BAD;
++					return false;
++				}
++				return true;
++			}
++			return false;
++		};
++
++		if (!tryResolve(pattern))
++		{
++			for (const auto& alt : fallbackPatterns)
++			{
++				if (tryResolve(alt))
++				{
++					pattern = alt;
++					break;
++				}
+ 			}
+ 		}
+ 	}
+@@ -847,6 +865,37 @@ bool Patterns::init()
+ 	SteamUI::BuildCompleteAppOverviewChange.optional = true;
+ 	SteamUI::OwnershipFlagsReference.optional = true;
+ 
++#if defined(__x86_64__)
++	// Dual Steam Stable (1794536281) + Public Beta (1795048523) x86_64 fallback signatures.
++	CUser::CheckAppOwnership.fallbackPatterns.push_back(
++		"41 57 41 56 41 55 41 54 55 48 89 D5 53 48 81 EC C8 00 00 00 48 8B 05 ? ? ? ? 48 89 7C 24 08 89 74 24 28");
++	IClientUser::IsUserSubscribedAppInTicket.fallbackPatterns.push_back(
++		"8B 87 74 27 00 00 85 C0 0F 84 ? ? ? ? 41 57 49 89 FF 41 56 41 89 F6 41 55");
++	IClientUserStats::RunIPCFrame.fallbackPatterns.push_back(
++		"55 48 89 E5 41 57 41 56 49 89 FE 41 55 41 54 49 89 D4 BA 04 00 00 00 53 48 89 F3 48 81 EC C8 00 00 00");
++	CUtlMemory::Grow.fallbackPatterns.push_back(
++		"E8 ? ? ? ? 48 63 44 24 08 EB 8C 48 8D 15 ? ? ? ? BE C8 04 00 00 48 8D 3D ? ? ? ? E8");
++	CDepotDownloadMgr::BuildDepotDependency.fallbackPatterns.push_back(
++		"41 57 41 56 49 89 FE 41 55 41 54 55 53 48 89 D3 48 81 EC 88 02 00 00 48 8B 84 24 C0 02 00 00");
++	CSteamMatchmakingServers::RequestInternetServerList.fallbackPatterns.push_back(
++		"55 48 89 E5 41 57 41 56 4C 8D 77 68 41 55 41 89 F5 41 54 45 89 CC 53 48 89 FB");
++	SteamUI::OwnershipFlagsReference.fallbackPatterns.push_back(
++		"41 8B 56 1C 48 8D 35 ? ? ? ? 4C 89 FF E8 ? ? ? ? 49 8B 06 48 8D 15 ? ? ? ? 48 8B 40 60 48 39 D0");
++	SteamUI::MarkAppChange.fallbackPatterns.push_back(
++		"41 57 41 56 41 55 41 54 55 53 48 83 EC 48 85 F6 48 89 7C 24 20 89 D7 89 54 24 14");
++#else
++	// Steam Stable (1792618285) + Public Beta (1792108788) i386 RunIPCFrame fallbacks
++	// (complements autoResolveIpcFrameRoots() and allows static CI verification).
++	IClientAppManager::RunIPCFrame.fallbackPatterns.push_back(
++		"E8 ? ? ? ? 8B 85 ? ? ? ? 83 C4 10 3D ? 85 0A 7A");
++	IClientApps::RunIPCFrame.fallbackPatterns.push_back(
++		"E8 ? ? ? ? 8B 85 ? ? ? ? 83 C4 10 3D ? 9C 88 A6");
++	IClientUGC::RunIPCFrame.fallbackPatterns.push_back(
++		"E8 ? ? ? ? 8B 85 ? ? ? ? 83 C4 10 3D ? FA 51 88");
++	IClientUserStats::RunIPCFrame.fallbackPatterns.push_back(
++		"E8 ? ? ? ? 8B 85 ? ? ? ? 83 C4 10 3D ? D6 E5 85");
++#endif
++
+ 	loadActiveCatalogs();
+ 
+ 	// Self-heal the IClient*::RunIPCFrame signatures before scanning.  Their
+@@ -947,7 +996,7 @@ namespace Patterns
+ 		Pattern_t BuildCompleteAppOverviewChange
+ 		{
+ 			"SteamUI::BuildCompleteAppOverviewChange",
+-			"41 57 41 56 41 55 41 54 55 48 89 F5 53 48 89 FB 48 81 EC D8 00 00 00 48 89 54 24 40",
++			"41 57 41 56 41 55 41 54 55 48 89 F5 53 48 89 FB 48 81 EC ? ? 00 00 48 89 54 24 ? 64 48 8B 04 25 28 00 00 00",
+ 			SigFollowMode::None,
+ 			&g_modSteamUI,
+ 			"Patterns::SteamUI::BuildCompleteAppOverviewChange"
+@@ -1070,7 +1119,7 @@ namespace Patterns
+ 		Pattern_t Offset_CompatManager
+ 		{
+ 			"CUser::m_CompatManager",
+-			"48 8D 83 58 4B 00 00 48 89 DE 48 89 C7 48 89 84 24 F0 00 00 00",
++			"48 8D 83 ? ? 00 00 48 89 DE 48 89 C7 48 89 84 24 ? ? 00 00 E8 ? ? ? ? 66 0F 6F ? ? ? ? ? 48 89 DE 48 C7 83 ? ? 00 00 FF FF FF FF",
+ 			SigFollowMode::None,
+ 			nullptr,
+ 			"Patterns::CUser::Offset_CompatManager"
+@@ -1092,7 +1141,7 @@ namespace Patterns
+ 		Pattern_t PostCallback
+ 		{
+ 			"CSteamEngine::PostCallback",
+-			"E8 ? ? ? ? 48 81 C3 E8 23 00 00 48 89 DF E8 ? ? ? ? 84 C0",
++			"E8 ? ? ? ? 48 81 C3 ? ? 00 00 48 89 DF E8 ? ? ? ? 84 C0 0F 84 ? ? 00 00 48 8B 44 24 ? 64 48 2B 04 25 28 00 00 00",
+ 			SigFollowMode::Relative,
+ 			nullptr,
+ 			"Patterns::CUser::PostCallback"
+@@ -1127,14 +1176,14 @@ namespace Patterns
+ 		Pattern_t ProcessPendingLicenseUpdates
+ 		{
+ 			"CUser::ProcessPendingLicenseUpdates",
+-			"41 54 49 89 FC 55 53 8B 9F C8 24 00 00 83 EB 01 78 66 48 63 C3 48 8D 2C 80 48 C1 E5 04",
++			"41 54 49 89 FC 55 53 8B 9F ? ? 00 00 83 EB 01 78 ? 48 63 C3 48 8D 2C 80 48 C1 E5 04",
+ 			SigFollowMode::None
+ 		};
+ 
+ 		Pattern_t NotifyLicensesUpdated
+ 		{
+ 			"CUser::NotifyLicensesUpdated",
+-			"41 57 41 56 41 55 41 54 55 53 48 81 EC 08 02 00 00 44 8B 8F C4 23 00 00",
++			"41 57 41 56 41 55 41 54 55 53 48 81 EC ? ? 00 00 44 8B ? ? ? 00 00 48 89 7C 24 ? 64 48 8B 04 25 28 00 00 00 48 89 84 24 ? ? 00 00 31 C0 45 85 ? 0F 8E",
+ 			SigFollowMode::None
+ 		};
+ 	}
+@@ -1218,7 +1267,7 @@ namespace Patterns
+ 		Pattern_t BLoggedOn
+ 		{
+ 			"IClientUser::BLoggedOn",
+-			"8B 47 48 C3 CC CC CC CC CC CC CC CC CC CC CC CC 8B 87 40 06 00 00",
++			"8B 47 48 C3 CC CC CC CC CC CC CC CC CC CC CC CC 8B 87 ? ? 00 00 C3 90 0F 1F 84 00 00 00 00 00 8B 87 ? ? 00 00 C3",
+ 			SigFollowMode::None
+ 		};
+ 		Pattern_t BUpdateAppOwnershipTicket
+@@ -1355,7 +1404,7 @@ namespace Patterns
+ 		Pattern_t Offset_GetPipeIndex
+ 		{
+ 			"IClientUtils::m_PipeIndex",
+-			"8B B7 D8 EF FF FF 83 F8 FF 74 32 48 8B 8F ? ? 00 00 EB 0D",
++			"8B B7 ? ? FF FF 83 F8 FF 74 ? 48 8B 8F ? ? 00 00 EB 0D 0F 1F 44 00 00 48 63 02 83 F8 FF",
+ 			SigFollowMode::None,
+ 			nullptr,
+ 			"Patterns::IClientUtils::Offset_GetPipeIndex"
+diff --git a/src/patterns.hpp b/src/patterns.hpp
+index 16437c3..76c47d0 100644
+--- a/src/patterns.hpp
++++ b/src/patterns.hpp
+@@ -21,6 +21,9 @@ public:
+ 	// dispatch patterns in place before find() runs, to absorb Steam-update
+ 	// id drift.  Every other pattern is left untouched.
+ 	std::string pattern;
++	// Optional fallback signatures tried in order when `pattern` does not match
++	// (e.g. dual Steam Stable + Public Beta x86_64 support).
++	std::vector<std::string> fallbackPatterns;
+ 	const MemHlp::SigFollowMode followMode;
+ 	std::vector<int16_t> prologue;
+ 
