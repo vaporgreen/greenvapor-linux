@@ -1,0 +1,18 @@
+# GreenVapor Linux — ShowUnownedStatus (Non-Steam Shortcut Presence) Patch
+#
+# Target: rafie-slsteam-moon (x64 steamrt64)
+# Files:
+#   1. src/config.hpp      (MTVariable<bool> showUnownedStatus)
+#   2. src/config.cpp      (ShowUnownedStatus YAML key, default false, hot-reloaded)
+#   3. src/feats/apps.cpp  (Apps::sendGamesPlayed non-Steam shortcut encoding)
+#
+# Behavior:
+#   When ShowUnownedStatus: yes is set in ~/.config/SLSsteam/config.yaml and no
+#   explicit FakeAppIds mapping exists for an unowned/managed app, SLSsteam
+#   encodes ONLY the outbound CMsgClientGamesPlayed status entry as a Steam
+#   non-Steam shortcut ID (CGameID type=2 -> 0x02000000) with game_extra_info
+#   set to the game's real title (common/name).
+#   - Does NOT change the Steamworks AppID seen by the game.
+#   - Runs after CloudRedirect's CCMInterface::Send observer, so saves and
+#     playtime tracking continue to observe the real AppID.
+#   - Hot-reloads via CFileWatcher when toggled from gvlinux or Decky Loader.
