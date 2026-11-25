@@ -1,0 +1,63 @@
+# GreenVapor Linux — Decky Loader + Lumen CEF Port 8080 Coexistence Patch
+#
+# Target: rafie-slsteam-moon (x64 steamrt64)
+# Files:
+#   1. src/feats/cefport.hpp  (CefPort::deckyPresent)
+#   2. src/main.cpp           (cefRewriteArgv)
+#
+# Root cause on SteamOS steamrt64:
+#   Steam launches `steamwebhelper` through a wrapper/child process where
+#   LD_AUDIT still loads SLSsteam.so, but setup() exits early because
+#   proc.name != "steam" (or a secondary audit namespace lost g_setupLock).
+#   That left g_cefKeepDefaultPort == false and g_clientPid == 0, so
+#   cefRewriteArgv() rewrote --remote-debugging-port=8080 to a random
+#   ephemeral port and wrote a 1-line ~/.local/share/Lumen/cef_port file,
+#   breaking Decky Loader (which is hardcoded to http://localhost:8080).
+#
+# Fix:
+#   1. Extend CefPort::deckyPresent() to honor SLSM_KEEP_CEF_8080=1 and
+#      explicit marker files (~/.local/share/SLSsteam/.decky_present and
+#      ~/.local/share/Lumen/.decky_present) in addition to
+#      ~/homebrew/services/PluginLoader.
+#   2. Re-check CefPort::deckyPresent() inside cefRewriteArgv() whenever
+#      --remote-debugging-port=<digits> is present, removing any stale
+#      cef_port contract and returning nullptr so port 8080 is preserved
+#      across all child/audit namespaces.
+
+--- a/src/feats/cefport.hpp
++++ b/src/feats/cefport.hpp
+@@ -350,7 +350,15 @@ namespace CefPort
+ 			return false;
+ 		}
+ 		std::error_code ec;
+-		return std::filesystem::exists(home + "/homebrew/services/PluginLoader", ec);
++		if (const char* env = std::getenv("SLSM_KEEP_CEF_8080"); env && env[0] == '1')
++			return true;
++		if (std::filesystem::exists(home + "/homebrew/services/PluginLoader", ec))
++			return true;
++		if (std::filesystem::exists(home + "/.local/share/SLSsteam/.decky_present", ec))
++			return true;
++		if (std::filesystem::exists(home + "/.local/share/Lumen/.decky_present", ec))
++			return true;
++		return false;
+ 	}
+
+--- a/src/main.cpp
++++ b/src/main.cpp
+@@ -963,6 +963,16 @@ namespace
+ 		if (!any)
+ 		{
+ 			return nullptr;
+ 		}
++
++		// Secondary LD_AUDIT namespaces or wrapper children (e.g. steamwebhelper.sh)
++		// can reach this exec hook without setup() setting g_cefKeepDefaultPort.
++		// Re-check Decky presence right before any rewrite/contract write.
++		if (CefPort::deckyPresent())
++		{
++			g_cefKeepDefaultPort = true;
++			CefPort::removeContract(CefPort::contractPath());
++			return nullptr;
++		}
+ 
+ 		static uint16_t port = 0;
